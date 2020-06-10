@@ -1,0 +1,36 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "resourcePrefix": {
+            "value": "prvlinktest"
+        },
+        "privateEndpointCode": {
+            "value": "plk"
+        },
+        "vnetName": {
+            "value": "prvlinktest-weu-vnet"
+        },
+        "subnetName": {
+            "value": "prvlink"
+        },
+        "privateServices":{
+            "value":[
+                {
+                "resourceCode": "acr",
+                "resourceType": "Microsoft.ContainerRegistry/registries",
+                "groupIds" : [ "registry" ],
+                "apiProvider": "Microsoft.ContainerRegistry",
+                "privateDnsName":"privatelink.azurecr.io"
+            },
+            {
+                "resourceCode": "stg",
+                "resourceType": "Microsoft.Storage/storageAccounts",
+                "groupIds" : [ "blob" ],
+                "apiProvider": "Microsoft.Storage",
+                "privateDnsName":"privatelink.blob.core.windows.net"
+            }
+        ]
+        }
+    }
+}

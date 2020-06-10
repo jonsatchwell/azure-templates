@@ -1,0 +1,36 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "dnsConfig": {
+            "type": "array",
+            "defaultValue": [{ "privateDnsName" : "privatelink.azurecr.io", "resourceName" : "crgarqfljvjvpo5bjqacr", "ipAddress" : "10.1.1.7"}],
+            "metadata": {
+                "description": "The prefix to use for resources within the resource group"
+            }
+        }
+    },
+    "resources": [
+        {
+            "type": "Microsoft.Network/privateDnsZones/A",
+            "apiVersion": "2018-09-01",
+            "name": "[concat(parameters('dnsConfig')[copyIndex('dnscopy')].privateDnsName, '/', parameters('dnsConfig')[copyIndex('dnscopy')].resourceName)]",
+            "dependsOn": [
+            ],
+            "copy": {
+                "name": "dnscopy",
+                "count": "[length(parameters('dnsConfig'))]"
+            },
+            "properties": {
+                "ttl": 3600,
+                "aRecords": [
+                    {
+                        "ipv4Address": "[parameters('dnsConfig')[copyIndex('dnscopy')].ipAddress]"
+                    }
+                ]
+            }
+        }
+      ],
+    "outputs": {
+    }
+}
