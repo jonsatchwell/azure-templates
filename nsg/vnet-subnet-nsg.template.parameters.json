@@ -1,0 +1,77 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "vnetName": {
+            "value": "testvnet"
+        },
+        "vnetAddressPrefix": {
+            "value": "10.0.0.0/16"
+        },
+        "subnets": {
+            "value": [
+                {
+                    "name": "sn-aks",
+                    "addressPrefix": "10.0.0.0/22",
+                    "nsgBuilder":"nsgsnaks",
+                    "whiteListedIPsOverride": [],
+                    "delegations": []
+                },
+                {
+                    "name": "sn-databricks",
+                    "addressPrefix": "10.0.4.0/22",
+                    "nsgBuilder":"nsgsndatabricks",
+                    "whiteListedIPsOverride": [],
+                    "delegations": []
+                }
+            ]
+        },
+        "nsgRulesBase": {
+            "value": [
+                {
+                    "name": "AllowCity",
+                    "properties": {
+                        "description": "Allow City",
+                        "protocol": "*",
+                        "sourcePortRange": "*",
+                        "destinationPortRange": "",
+                        "destinationPortRanges": [
+                            "443"
+                        ],
+                        "destinationAddressPrefix": "*",
+                        "sourceAddressPrefix": "",
+                        "sourceAddressPrefixes": [
+                            "44.110.220.18/28"
+                        ],
+                        "access": "Allow",
+                        "priority": 100,
+                        "direction": "inbound"
+                    }
+                    
+                }
+            ]
+        },
+        "nsgRulesApp": {
+            "value": [
+                {
+                    "name": "Microsoft.Databricks-workspaces_UseOnly_databricks-worker-to-databricks-webapp",
+                    "properties": {
+                        "description": "Required for workers communication with Databricks Webapp.",
+                        "protocol": "tcp",
+                        "sourcePortRange": "*",
+                        "destinationPortRange": "",
+                        "destinationPortRanges": [
+                            "443"
+                        ],
+                        "destinationAddressPrefix": "AzureDatabricks",
+                        "sourceAddressPrefix": "VirtualNetwork",
+                        "sourceAddressPrefixes": "",
+                        "access": "Allow",
+                        "priority": 200,
+                        "direction": "outbound"
+                    }
+                }
+            ]
+        }
+    }
+}

@@ -1,0 +1,119 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "0.0.0.0",
+    "parameters": {
+        "vnetName": {
+            "type": "string",
+            "defaultValue": "[uniqueString('vnet-',resourceGroup().id)]",
+            "metadata": {
+                "description": "Name of the vnet"
+            }
+        },
+        "vnetAddressPrefix": {
+            "type": "string",
+            "defaultValue": "10.0.0.0/16",
+            "metadata": {
+                "description": "The address prefix to use for the vnet"
+            }
+        },
+        "subnets": {
+            "type": "array",
+            "metadata": {
+                "description": "object array containing subnet definitions"
+            }
+        },
+        "nsgRulesBase": {
+            "type": "array",
+            "metadata": {
+                "description": "object array containing subnet definitions"
+            }
+        },
+        "nsgRulesApp": {
+            "type": "array",
+            "metadata": {
+                "description": "object array containing subnet definitions"
+            }
+        }
+    },
+    "variables": {
+        "nsgsndatabricks": "[ union(parameters('nsgRulesApp'), parameters('nsgRulesBase'))]",
+        "nsgsnaks": "[ parameters('nsgRulesBase')]"
+    },
+    "resources": [
+        {
+            "name": "[concat('nsg-',parameters('subnets')[copyIndex()].name)]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2019-11-01",
+            "location": "[resourceGroup().location]",
+            "copy": {
+                "name": "nsgCopy",
+                "count": "[length(parameters('subnets'))]"
+            },
+            "properties": {
+                "copy": [
+                    {
+                        "name": "securityRules",
+                        "count": "[length(variables(parameters('subnets')[copyIndex()].nsgBuilder))]",
+                        "input": {
+                            "name": "[variables(parameters('subnets')[copyIndex()].nsgBuilder)[copyIndex('securityRules')].name]",
+                            "properties": {
+                                "description": "[variables(parameters('subnets')[copyIndex()].nsgBuilder)[copyIndex('securityRules')].properties.description]",
+                                "protocol": "[variables(parameters('subnets')[copyIndex()].nsgBuilder)[copyIndex('securityRules')].properties.protocol]",
+                                "sourcePortRange": "[variables(parameters('subnets')[copyIndex()].nsgBuilder)[copyIndex('securityRules')].properties.sourcePortRange]",
+                                "destinationPortRange": "[variables(parameters('subnets')[copyIndex()].nsgBuilder)[copyIndex('securityRules')].properties.destinationPortRange]",
+                                "destinationPortRanges": "[variables(parameters('subnets')[copyIndex()].nsgBuilder)[copyIndex('securityRules')].properties.destinationPortRanges]",
+                                "destinationAddressPrefix": "[variables(parameters('subnets')[copyIndex()].nsgBuilder)[copyIndex('securityRules')].properties.destinationAddressPrefix]",
+                                "sourceAddressPrefix": "[variables(parameters('subnets')[copyIndex()].nsgBuilder)[copyIndex('securityRules')].properties.sourceAddressPrefix]",
+                                "sourceAddressPrefixes": "[variables(parameters('subnets')[copyIndex()].nsgBuilder)[copyIndex('securityRules')].properties.sourceAddressPrefixes]",
+                                "access": "[variables(parameters('subnets')[copyIndex()].nsgBuilder)[copyIndex('securityRules')].properties.access]",
+                                "priority": "[add(variables(parameters('subnets')[copyIndex()].nsgBuilder)[copyIndex('securityRules')].properties.priority,copyIndex('securityRules'))]",
+                                "direction": "[variables(parameters('subnets')[copyIndex()].nsgBuilder)[copyIndex('securityRules')].properties.direction]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[parameters('vnetName')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2019-11-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [ "nsgCopy" ],
+            "tags": {
+                "displayName": "[parameters('vnetName')]"
+            },
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "[parameters('vnetAddressPrefix')]"
+                    ]
+                },
+                "copy": [
+                    {
+                        "name": "subnets",
+                        "count": "[length(parameters('subnets'))]",
+                        "input": {
+                            "name": "[parameters('subnets')[copyIndex('subnets')].name]",
+                            "properties": {
+                                "addressPrefix": "[parameters('subnets')[copyIndex('subnets')].addressPrefix]",
+                                "networkSecurityGroup": {
+                                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups',concat('nsg-',parameters('subnets')[copyIndex('subnets')].name))]"
+                                },
+                                "delegations": "[parameters('subnets')[copyIndex('subnets')].delegations]",
+                                "privateEndpointNetworkPolicies": "Disabled",
+                                "privateLinkServiceNetworkPolicies": "Enabled"
+                            }
+                        }
+                    }
+                ]
+            }
+        }  
+    ],
+    "outputs": {
+        "UnionNsgRules": {
+            "type": "array",
+            "value": "[variables('nsgsndatabricks')]"
+        }
+    }
+}
